@@ -22,7 +22,7 @@ class DataFeeder(threading.Thread):
     self._coord = coordinator
     self._hparams = hparams
     self._offset = 0
-    self._cache_max_offset = hparams.n_cache_audio_targets
+    self.n_cache_audio_targets = hparams.n_cache_audio_targets
     self._num_cached = 0
 
     # Load metadata:
@@ -32,10 +32,11 @@ class DataFeeder(threading.Thread):
       hours = sum((int(x[2]) for x in self._metadata)) * hparams.frame_shift_ms / (3600 * 1000)
       log('Loaded metadata for %d examples (%.2f hours)' % (len(self._metadata), hours))
 
-    assert self._cache_max_offset >=0 and self._cache_max_offset < len(self._metadata)
+    assert self.n_cache_audio_targets >=0 and self.n_cache_audio_targets <= len(self._metadata)
 
     if self.cache_targets:
-      self._cached_targets = []
+      self._cached_mel_targets = {}
+      self._cached_spec_targets = {}
 
     # Create placeholders for inputs and targets. Don't specify batch size because we want to
     # be able to feed different sized batches at eval time.
@@ -70,7 +71,7 @@ class DataFeeder(threading.Thread):
 
   @property
   def cache_targets(self):
-    return self._cache_max_offset > 0
+    return self.n_cache_audio_targets > 0
 
   def start_in_session(self, session):
     self._session = session
@@ -94,8 +95,8 @@ class DataFeeder(threading.Thread):
     r = self._hparams.outputs_per_step
     examples = [self._get_next_example() for i in range(n * _batches_per_group)]
 
-    if self.cache_targets and self._num_cached != len(self._cached_targets):
-      self._num_cached = len(self._cached_targets)
+    if self.cache_targets and self._num_cached != len(self._cached_mel_targets):
+      self._num_cached = len(self._cached_mel_targets)
       log('Cached %d targets' % self._num_cached)
 
     # Bucket examples based on similar output sequence length for efficiency:
@@ -115,6 +116,7 @@ class DataFeeder(threading.Thread):
       self._offset = 0
       random.shuffle(self._metadata)
     meta = self._metadata[self._offset]
+    self._offset += 1
 
     text = meta[3]
     if self._cmudict and random.random() < _p_cmudict:
@@ -122,19 +124,20 @@ class DataFeeder(threading.Thread):
 
     input_data = np.asarray(textinput.to_sequence(text), dtype=np.int32)
 
-    if self.cache_targets and self._offset < self._cache_max_offset:
-      if len(self._cached_targets) > self._offset:
-        mel_target, linear_target = self._cached_targets[self._offset]
+    if self.cache_targets:
+      if (meta[0] in self._cached_spec_targets) and (meta[1] in self._cached_mel_targets):
+        linear_target = self._cached_spec_targets[meta[0]]
+        mel_target = self._cached_mel_targets[meta[1]]
       else:
         linear_target = np.load(os.path.join(self._datadir, meta[0]))
         mel_target = np.load(os.path.join(self._datadir, meta[1]))
-        self._cached_targets.append((mel_target, linear_target))
-        assert len(self._cached_targets) - 1 == self._offset
+        if len(self._cached_spec_targets) < self.n_cache_audio_targets and len(self._cached_mel_targets) < self.n_cache_audio_targets:
+          self._cached_spec_targets[meta[0]] = linear_target
+          self._cached_mel_targets[meta[1]] = mel_target
     else:
       linear_target = np.load(os.path.join(self._datadir, meta[0]))
       mel_target = np.load(os.path.join(self._datadir, meta[1]))
 
-    self._offset += 1
     return (input_data, mel_target, linear_target, len(linear_target))
 
 
