@@ -9,7 +9,7 @@ from util import cmudict, textinput
 from util.infolog import log
 
 
-_batches_per_group = 32
+_batches_per_group = 1
 _p_cmudict = 0.5
 _pad = 0
 
@@ -22,6 +22,8 @@ class DataFeeder(threading.Thread):
     self._coord = coordinator
     self._hparams = hparams
     self._offset = 0
+    self._cache_max_offset = hparams.n_cache_audio_targets
+    self._num_cached = 0
 
     # Load metadata:
     self._datadir = os.path.dirname(metadata_filename)
@@ -29,6 +31,11 @@ class DataFeeder(threading.Thread):
       self._metadata = [line.strip().split('|') for line in f]
       hours = sum((int(x[2]) for x in self._metadata)) * hparams.frame_shift_ms / (3600 * 1000)
       log('Loaded metadata for %d examples (%.2f hours)' % (len(self._metadata), hours))
+
+    assert self._cache_max_offset >=0 and self._cache_max_offset < len(self._metadata)
+
+    if self.cache_targets:
+      self._cached_targets = []
 
     # Create placeholders for inputs and targets. Don't specify batch size because we want to
     # be able to feed different sized batches at eval time.
@@ -61,6 +68,9 @@ class DataFeeder(threading.Thread):
     else:
       self._cmudict = None
 
+  @property
+  def cache_targets(self):
+    return self._cache_max_offset > 0
 
   def start_in_session(self, session):
     self._session = session
@@ -84,6 +94,10 @@ class DataFeeder(threading.Thread):
     r = self._hparams.outputs_per_step
     examples = [self._get_next_example() for i in range(n * _batches_per_group)]
 
+    if self.cache_targets and self._num_cached != len(self._cached_targets):
+      self._num_cached = len(self._cached_targets)
+      log('Cached %d targets' % self._num_cached)
+
     # Bucket examples based on similar output sequence length for efficiency:
     examples.sort(key=lambda x: x[-1])
     batches = [examples[i:i+n] for i in range(0, len(examples), n)]
@@ -101,15 +115,26 @@ class DataFeeder(threading.Thread):
       self._offset = 0
       random.shuffle(self._metadata)
     meta = self._metadata[self._offset]
-    self._offset += 1
 
     text = meta[3]
     if self._cmudict and random.random() < _p_cmudict:
       text = ' '.join([self._maybe_get_arpabet(word) for word in text.split(' ')])
 
     input_data = np.asarray(textinput.to_sequence(text), dtype=np.int32)
-    linear_target = np.load(os.path.join(self._datadir, meta[0]))
-    mel_target = np.load(os.path.join(self._datadir, meta[1]))
+
+    if self.cache_targets and self._offset < self._cache_max_offset:
+      if len(self._cached_targets) > self._offset:
+        mel_target, linear_target = self._cached_targets[self._offset]
+      else:
+        linear_target = np.load(os.path.join(self._datadir, meta[0]))
+        mel_target = np.load(os.path.join(self._datadir, meta[1]))
+        self._cached_targets.append((mel_target, linear_target))
+        assert len(self._cached_targets) - 1 == self._offset
+    else:
+      linear_target = np.load(os.path.join(self._datadir, meta[0]))
+      mel_target = np.load(os.path.join(self._datadir, meta[1]))
+
+    self._offset += 1
     return (input_data, mel_target, linear_target, len(linear_target))
 
 

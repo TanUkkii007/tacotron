@@ -28,6 +28,7 @@ hparams = tf.contrib.training.HParams(
   adam_beta2=0.999,
   initial_learning_rate=0.002,
   decay_learning_rate=True,
+  n_cache_audio_targets=7000,
 
   # Eval:
   max_iters=200,
