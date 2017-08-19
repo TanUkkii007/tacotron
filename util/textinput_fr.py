@@ -10,10 +10,11 @@ _uppercase   = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 _lowercase   = 'abcdefghijklmnopqrstuvwxyz'
 _punctuation = '!\'(),-.:;?'
 _space       = ' '
+_fr_accent   = ''.join([a for a in unicodedata.normalize('NFKD', 'çèéêë') if a not in 'ce'])
 _fr_uppercase = 'ÀÂÇÈÉÊËÎÏÔÙÛÜ'
 _fr_lowercase = 'àâçèéêëîïôùûü'
 
-_valid_input_chars = _uppercase + _lowercase + _punctuation + _space + _fr_uppercase + _fr_lowercase
+_valid_input_chars = _uppercase + _lowercase + _punctuation + _space + _fr_accent + _fr_uppercase + _fr_lowercase
 _trans_table = str.maketrans({chr(i): ' ' for i in range(256) if chr(i) not in _valid_input_chars})
 
 _normal_symbols = _pad + _eos + _valid_input_chars
