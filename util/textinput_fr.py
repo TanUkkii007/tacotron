@@ -34,8 +34,7 @@ def to_sequence(text, force_lowercase=True, expand_abbreviations=True):
   '''Converts a string of text to a sequence of IDs for the symbols in the text'''
   text = text.strip()
   text = text.replace('"', '')
-  text = unicodedata.normalize('NFKD', text).encode('utf-8', 'ignore').decode()
-
+  text = unicodedata.normalize('NFKD', text).encode('utf-8', 'ignore').decode('utf-8')
   sequence = []
   sequence += _text_to_sequence(text, force_lowercase, expand_abbreviations)
   sequence.append(_char_to_id[_eos])
@@ -59,5 +58,6 @@ def _text_to_sequence(text, force_lowercase, expand_abbreviations):
   if force_lowercase:
     text = text.lower()
   text = re.sub(_whitespace_re, ' ', text)
+  text = text.replace('’', "'")
   return [_char_to_id[c] for c in text]
 
