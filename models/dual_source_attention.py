@@ -17,9 +17,10 @@ _zero_state_tensors = rnn_cell_impl._zero_state_tensors  # pylint: disable=prote
 class DualSourceAttentionWrapperState(
         collections.namedtuple(
             "DualSourceAttentionWrapperState",
-            ("state1_time", "state1_alignments", "state1_alignment_history",
-             "state2_time", "state2_alignments", "state2_alignment_history",
-             "cell_state", "attention"))):
+            ("cell_state", "attention",
+             "state1_time", "state1_alignments", "state1_alignment_history",
+             "state2_time", "state2_alignments", "state2_alignment_history"
+             ))):
     pass
 
 

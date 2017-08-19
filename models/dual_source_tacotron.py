@@ -1,12 +1,12 @@
 import tensorflow as tf
 from tensorflow.contrib.rnn import GRUCell, MultiRNNCell, OutputProjectionWrapper, ResidualWrapper
 from tensorflow.contrib.seq2seq import BasicDecoder, BahdanauAttention, AttentionWrapper
-from util import textinput
+from util import textinput_fr
 from util.infolog import log
 from .helpers import TacoTestHelper, TacoTrainingHelper
 from .modules import encoder_cbhg, post_cbhg, prenet
 from .rnn_wrappers import DecoderPrenetWrapper, ConcatOutputAndAttentionWrapper
-from dual_source_attention import DualSourceAttentionWrapper
+from .dual_source_attention import DualSourceAttentionWrapper
 
 
 class DualSourceTacotron():
@@ -33,22 +33,24 @@ class DualSourceTacotron():
     '''
     with tf.variable_scope('inference') as scope:
       is_training = linear_targets is not None
-      batch_size = tf.shape(inputs)[0]
+      batch_size = tf.shape(inputs1)[0]
       hp = self._hparams
 
       # Embeddings
       embedding_table = tf.get_variable(
-        'embedding', [textinput.num_symbols(), 256], dtype=tf.float32,
+        'embedding', [textinput_fr.num_symbols(), 256], dtype=tf.float32,
         initializer=tf.truncated_normal_initializer(stddev=0.5))
 
-      embedded_inputs1 = tf.nn.embedding_lookup(embedding_table, inputs)           # [N, T_in, 256]
-      embedded_inputs2 = tf.nn.embedding_lookup(embedding_table, inputs)           # [N, T_in, 256]
+      embedded_inputs1 = tf.nn.embedding_lookup(embedding_table, inputs1)           # [N, T_in, 256]
+      embedded_inputs2 = tf.nn.embedding_lookup(embedding_table, inputs2)           # [N, T_in, 256]
 
       # Encoder
-      prenet_outputs1 = prenet(embedded_inputs1, is_training)                       # [N, T_in, 128]
-      encoder_outputs1 = encoder_cbhg(prenet_outputs1, input_lengths1, is_training)  # [N, T_in, 256]
-      prenet_outputs2 = prenet(embedded_inputs2, is_training)                       # [N, T_in, 128]
-      encoder_outputs2 = encoder_cbhg(prenet_outputs2, input_lengths2, is_training)  # [N, T_in, 256]
+      with tf.variable_scope('encoder1'):
+        prenet_outputs1 = prenet(embedded_inputs1, is_training)                       # [N, T_in, 128]
+        encoder_outputs1 = encoder_cbhg(prenet_outputs1, input_lengths1, is_training)  # [N, T_in, 256]
+      with tf.variable_scope('encoder2'):
+        prenet_outputs2 = prenet(embedded_inputs2, is_training)                       # [N, T_in, 128]
+        encoder_outputs2 = encoder_cbhg(prenet_outputs2, input_lengths2, is_training)  # [N, T_in, 256]
 
       # Attention
       attention_cell = DualSourceAttentionWrapper(
@@ -71,9 +73,9 @@ class DualSourceTacotron():
       # Project onto r mel spectrograms (predict r outputs at each RNN step):
       output_cell = OutputProjectionWrapper(decoder_cell, hp.num_mels * hp.outputs_per_step)
       decoder_init_state = output_cell.zero_state(batch_size=batch_size, dtype=tf.float32)
-
+      
       if is_training:
-        helper = TacoTrainingHelper(inputs, mel_targets, hp.num_mels, hp.outputs_per_step)
+        helper = TacoTrainingHelper(inputs1, mel_targets, hp.num_mels, hp.outputs_per_step)
       else:
         helper = TacoTestHelper(batch_size, hp.num_mels, hp.outputs_per_step)
 
@@ -103,9 +105,12 @@ class DualSourceTacotron():
       self.mel_targets = mel_targets
       self.linear_targets = linear_targets
       log('Initialized Tacotron model. Dimensions: ')
-      log('  embedding:               %d' % embedded_inputs.shape[-1])
-      log('  prenet out:              %d' % prenet_outputs.shape[-1])
-      log('  encoder out:             %d' % encoder_outputs.shape[-1])
+      log('  embedding1:              %d' % embedded_inputs1.shape[-1])
+      log('  embedding2:              %d' % embedded_inputs2.shape[-1])
+      log('  prenet out1:             %d' % prenet_outputs1.shape[-1])
+      log('  prenet out2:             %d' % prenet_outputs2.shape[-1])
+      log('  encoder out1:            %d' % encoder_outputs1.shape[-1])
+      log('  encoder out2:            %d' % encoder_outputs2.shape[-1])
       log('  attention out:           %d' % attention_cell.output_size)
       log('  concat attn & out:       %d' % concat_cell.output_size)
       log('  decoder cell out:        %d' % decoder_cell.output_size)

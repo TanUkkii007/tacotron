@@ -28,12 +28,12 @@ class SwitchingDualDataFeeder(threading.Thread):
     self._datadir1 = os.path.dirname(metadata_filename1)
     self._datadir2 = os.path.dirname(metadata_filename2)
 
-    with open(metadata_filename1) as f:
+    with open(metadata_filename1, encoding='utf-8') as f:
       self._metadata1 = [line.strip().split('|') for line in f]
       hours = sum((int(x[2]) for x in self._metadata1)) * hparams.frame_shift_ms / (3600 * 1000)
       log('Loaded metadata for %d examples (%.2f hours)' % (len(self._metadata1), hours))
     
-    with open(metadata_filename2) as f:
+    with open(metadata_filename2, encoding='utf-8') as f:
       self._metadata2 = [line.strip().split('|') for line in f]
       hours = sum((int(x[2]) for x in self._metadata2)) * hparams.frame_shift_ms / (3600 * 1000)
       log('Loaded metadata for %d examples (%.2f hours)' % (len(self._metadata2), hours))

@@ -10,7 +10,7 @@ import traceback
 
 from datasets.dual_datafeeder import SwitchingDualDataFeeder
 from hparams import hparams, hparams_debug_string
-from dual_source_tacotron import DualSourceTacotron
+from models.dual_source_tacotron import DualSourceTacotron
 from util import audio, infolog, plot, textinput_fr, ValueWindow
 log = infolog.log
 
@@ -48,7 +48,7 @@ def train(log_dir, args):
   input_path1 = os.path.join(args.base_dir, args.input1)
   input_path2 = os.path.join(args.base_dir, args.input2)
   log('Checkpoint path: %s' % checkpoint_path)
-  log('Loading training data from: %s' % input_path)
+  log('Loading training data from: %s, %s' % (input_path1, input_path2))
   log('Using model: %s' % args.model)
   log(hparams_debug_string())
 
