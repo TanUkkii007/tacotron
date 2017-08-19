@@ -9,12 +9,12 @@ from .rnn_wrappers import DecoderPrenetWrapper, ConcatOutputAndAttentionWrapper
 from dual_source_attention import DualSourceAttentionWrapper
 
 
-class Tacotron():
+class DualSourceTacotron():
   def __init__(self, hparams):
     self._hparams = hparams
 
 
-  def initialize(self, inputs1, inputs2, input_lengths1, input_lengths2, mel_targets=None, linear_targets=None):
+  def initialize(self, inputs1, input_lengths1, inputs2, input_lengths2, mel_targets=None, linear_targets=None):
     '''Initializes the model for inference.
 
     Sets "mel_outputs", "linear_outputs", and "alignments" fields.
@@ -92,8 +92,10 @@ class Tacotron():
       alignments1 = tf.transpose(final_decoder_state[0].state1_alignment_history.stack(), [1, 2, 0])
       alignments2 = tf.transpose(final_decoder_state[0].state2_alignment_history.stack(), [1, 2, 0])
 
-      self.inputs = inputs
-      self.input_lengths = input_lengths
+      self.inputs1 = inputs1
+      self.input_lengths1 = input_lengths1
+      self.inputs2 = inputs2
+      self.input_lengths2 = input_lengths2
       self.mel_outputs = mel_outputs
       self.linear_outputs = linear_outputs
       self.alignments1 = alignments1
