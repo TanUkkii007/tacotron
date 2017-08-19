@@ -59,5 +59,7 @@ def _text_to_sequence(text, force_lowercase, expand_abbreviations):
     text = text.lower()
   text = re.sub(_whitespace_re, ' ', text)
   text = text.replace('’', "'")
+  text = text.replace('–', '--')
+  text = text.replace('œ', 'oe')  
   return [_char_to_id[c] for c in text]
 
