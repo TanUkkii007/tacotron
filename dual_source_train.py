@@ -128,9 +128,9 @@ def train(log_dir, args):
 
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument('--base_dir', default=os.path.expanduser('.'))
+  parser.add_argument('--base_dir', default=os.path.dirname('.'))
   parser.add_argument('--input1', default='training/train.txt')
-  parser.add_argument('--input2', default='training/train.txt')
+  parser.add_argument('--input2', default='training_siwis/train.txt')
   parser.add_argument('--model', default='dual_source_tacotron')
   parser.add_argument('--name', help='Name of the run. Used for logging. Defaults to model name.')
   parser.add_argument('--hparams', default='',

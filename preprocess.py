@@ -25,7 +25,7 @@ def preprocess_ljspeech(args):
 def preprocess_siwis(args):
   in_dir = os.path.join(args.base_dir, 'The_SIWIS_French_Speech_Synthesis_Database/SiwisFrenchSpeechSynthesisDatabase/')
   out_dir = os.path.join(args.base_dir, args.output)
-  os.makedirs(out_dir, exist_ok=True)
+  os.makedirs(out_dir, exist_ok=False)
   metadata = siwis.build_from_path(in_dir, out_dir, args.num_workers, tqdm=tqdm)
   write_metadata(metadata, out_dir)
 
@@ -43,7 +43,7 @@ def write_metadata(metadata, out_dir):
 
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument('--base_dir', default=os.path.expanduser('.'))
+  parser.add_argument('--base_dir', default=os.path.dirname('.'))
   parser.add_argument('--output', default='training')
   parser.add_argument('--dataset', required=True, choices=['blizzard', 'ljspeech', 'siwis'])
   parser.add_argument('--num_workers', type=int, default=cpu_count())

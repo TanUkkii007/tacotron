@@ -6,3 +6,5 @@ run*.sh
 LJSpeech-1.0/
 logs-tacotron/
 training/
+training_siwis/
+The_SIWIS_French_Speech_Synthesis_Database/
