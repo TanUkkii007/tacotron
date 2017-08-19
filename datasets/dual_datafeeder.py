@@ -124,7 +124,7 @@ class SwitchingDualDataFeeder(threading.Thread):
     if self._offset1 >= len(self._metadata1):
       self._offset1 = 0
       random.shuffle(self._metadata1)
-    meta = self._metadata1[self._offset]
+    meta = self._metadata1[self._offset1]
     self._offset1 += 1
 
     text = meta[3]
