@@ -94,7 +94,7 @@ class SwitchingDualDataFeeder(threading.Thread):
     # Read a group of examples:
     n = self._hparams.batch_size
     r = self._hparams.outputs_per_step
-    examples = [self._get_next_example() for i in range(n * _batches_per_group)]
+    examples = sum([self._get_next_example_batch(n) for i in range(_batches_per_group)], [])
 
     # Bucket examples based on similar output sequence length for efficiency:
     examples.sort(key=lambda x: x[-1])
@@ -107,16 +107,20 @@ class SwitchingDualDataFeeder(threading.Thread):
       self._session.run(self._enqueue_op, feed_dict=feed_dict)
 
 
-  def _get_next_example(self):
+  def _get_next_example_batch(self, batch_size):
     '''Loads a single example (input1, input2, mel_target, linear_target, cost) from disk'''
     if random.random() < 0.5:
-      _input1, _mel_target, _linear_target, _linear_target_len = self._get_next_example1()
-      _input2 = np.zeros_like(_input1, dtype=np.int32)
-      return _input1, _input2, _mel_target, _linear_target, _linear_target_len
+      def _get_next_example():
+        _input1, _mel_target, _linear_target, _linear_target_len = self._get_next_example1()
+        _input2 = np.zeros_like(_input1, dtype=np.int32)
+        return _input1, _input2, _mel_target, _linear_target, _linear_target_len
+      return [_get_next_example() for i in range(batch_size)]
     else:
-      _input2, _mel_target, _linear_target, _linear_target_len = self._get_next_example2()
-      _input1 = np.zeros_like(_input2, dtype=np.int32)
-      return _input1, _input2, _mel_target, _linear_target, _linear_target_len
+      def _get_next_example():
+        _input2, _mel_target, _linear_target, _linear_target_len = self._get_next_example2()
+        _input1 = np.zeros_like(_input2, dtype=np.int32)
+        return _input1, _input2, _mel_target, _linear_target, _linear_target_len
+      return [_get_next_example() for i in range(batch_size)]
 
 
   def _get_next_example1(self):
