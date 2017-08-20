@@ -117,8 +117,8 @@ def train(log_dir, args):
             info='%s, %s, %s, step=%d, loss=%.5f' % (args.model, commit, time_string(), step, loss))
           plot.plot_alignment(alignment2, os.path.join(log_dir, 'step-%d-align2.png' % step),
             info='%s, %s, %s, step=%d, loss=%.5f' % (args.model, commit, time_string(), step, loss))
-          log('Input1: %s' % textinput_fr.to_string(input_seq1))
-          log('Input2: %s' % textinput_fr.to_string(input_seq2))
+          log('Input1: %s' % textinput_fr.to_string(input_seq1).encode('utf-8', 'backslashreplace'))
+          log('Input2: %s' % textinput_fr.to_string(input_seq2).encode('utf-8', 'backslashreplace'))
 
     except Exception as e:
       log('Exiting due to exception: %s' % e, slack=True)
