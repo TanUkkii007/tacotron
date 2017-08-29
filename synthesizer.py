@@ -30,7 +30,8 @@ class Synthesizer:
       self.model.inputs: [np.asarray(seq, dtype=np.int32)],
       self.model.input_lengths: np.asarray([len(seq)], dtype=np.int32)
     }
-    spec = self.session.run(self.model.linear_outputs[0], feed_dict=feed_dict)
+    spec, alignments = self.session.run([self.model.linear_outputs[0], self.model.alignments[0]], feed_dict=feed_dict)
     out = io.BytesIO()
     audio.save_wav(audio.inv_spectrogram(spec.T), out)
-    return out.getvalue()
+    return out.getvalue(), alignments
+ 

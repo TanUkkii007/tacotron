@@ -3,7 +3,7 @@ import os
 import re
 from hparams import hparams, hparams_debug_string
 from synthesizer import Synthesizer
-
+from util import plot
 
 sentences = [
   # From July 8, 2017 New York Times:
@@ -33,9 +33,12 @@ def run_eval(args):
   base_path = get_output_base_path(args.checkpoint)
   for i, text in enumerate(sentences):
     path = '%s-%d.wav' % (base_path, i)
+    alignment_path = '%s-%d.png' % (base_path, i)
     print('Synthesizing: %s' % path)
+    audio, alignment = synth.synthesize(text)
     with open(path, 'wb') as f:
-      f.write(synth.synthesize(text))
+      f.write(audio)
+    plot.plot_alignment_and_text(alignment, alignment_path, text)
 
 
 def main():
